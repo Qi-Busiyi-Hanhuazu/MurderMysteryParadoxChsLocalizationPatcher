@@ -1,0 +1,37 @@
+name: Build on push
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - name: Get latest tag
+        id: get-tag
+        run: |
+          $(git describe --tags) -Replace '^v', 'version=' >> $env:GITHUB_OUTPUT
+      - name: Build and pack package
+        env:
+          XZ_VERSION: ${{ steps.get-tag.outputs.version }}
+        run: |
+          nuget restore
+          Move-Item -Path "MurderMysteryParadoxChsLocalizationPatcher.csproj" -Destination "MurderMysteryParadoxChsLocalizationPatcher.csproj.bak"
+          Get-Content -Path "MurderMysteryParadoxChsLocalizationPatcher.csproj.bak" -Encoding UTF8 | ForEach-Object { $_ -Replace '(Assembly(?:File)?Version)\("[\d\.]+"\)', "`$1(""$env:XZ_VERSION"")" } | Out-File -FilePath "MurderMysteryParadoxChsLocalizationPatcher.csproj" -Encoding UTF8
+          dotnet publish MurderMysteryParadoxChsLocalizationPatcher.csproj -c Release -o artifacts
+          Remove-Item -Path "MurderMysteryParadoxChsLocalizationPatcher.csproj"
+          Move-Item -Path "MurderMysteryParadoxChsLocalizationPatcher.csproj.bak" -Destination "MurderMysteryParadoxChsLocalizationPatcher.csproj"
+          Compress-Archive -Path "artifacts/MurderMysteryParadoxChsLocalizationPatcher.exe" -DestinationPath "artifacts/MurderMysteryParadoxChsLocalizationPatcher.${env:XZ_VERSION}.zip"
+      - name: GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifacts: "artifacts/MurderMysteryParadoxChsLocalizationPatcher.*.zip"
+          bodyFile: README.md
+          name: "v${{ steps.get-tag.outputs.version }}"
+          draft: true
+          token: ${{ secrets.GITHUB_TOKEN }}
