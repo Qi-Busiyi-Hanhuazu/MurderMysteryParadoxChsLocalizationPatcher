@@ -21,7 +21,7 @@ jobs:
         run: |
           nuget restore
           Move-Item -Path "MurderMysteryParadoxChsLocalizationPatcher.csproj" -Destination "MurderMysteryParadoxChsLocalizationPatcher.csproj.bak"
-          Get-Content -Path "MurderMysteryParadoxChsLocalizationPatcher.csproj.bak" -Encoding UTF8 | ForEach-Object { $_ -Replace '(Assembly(?:File)?Version)\("[\d\.]+"\)', "`$1(""$env:XZ_VERSION"")" } | Out-File -FilePath "MurderMysteryParadoxChsLocalizationPatcher.csproj" -Encoding UTF8
+          Get-Content -Path "MurderMysteryParadoxChsLocalizationPatcher.csproj.bak" -Encoding UTF8 | ForEach-Object { $_ -Replace '(<(?:Assembly|File)Version)>[\d\.]+<', "`$1>$env:XZ_VERSION<" } | Out-File -FilePath "MurderMysteryParadoxChsLocalizationPatcher.csproj" -Encoding UTF8
           dotnet publish MurderMysteryParadoxChsLocalizationPatcher.csproj -c Release -o artifacts
           Remove-Item -Path "MurderMysteryParadoxChsLocalizationPatcher.csproj"
           Move-Item -Path "MurderMysteryParadoxChsLocalizationPatcher.csproj.bak" -Destination "MurderMysteryParadoxChsLocalizationPatcher.csproj"
